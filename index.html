@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Witze-Dummy</title>
+<style>
+  :root { --bg:#fff7d6; --ink:#2b1d0e; --card:#fff; --accent:#ff4f79; --accent2:#3ec1d3; --shadow:#2b1d0e; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#1d1630; --ink:#fdf3e1; --card:#2c2147; --accent:#ff6f91; --accent2:#5ce1e6; --shadow:#000; }
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font-family:"Comic Sans MS","Comic Neue","Chalkboard SE",system-ui,sans-serif; overflow-x:hidden; }
+  header { text-align:center; padding:40px 16px 8px; }
+  h1 { font-size:clamp(2.2rem,8vw,4.5rem); margin:0; color:var(--accent); text-shadow:4px 4px 0 var(--shadow); animation:wobble 2.5s ease-in-out infinite; display:inline-block; }
+  header p { font-size:1.1rem; margin:12px 0 0; }
+  main { max-width:960px; margin:24px auto 64px; padding:0 16px; display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:22px; }
+  .card { background:var(--card); border:3px solid var(--ink); border-radius:18px; padding:20px; box-shadow:6px 6px 0 var(--shadow); cursor:pointer; transition:transform .15s; position:relative; }
+  .card:nth-child(odd) { transform:rotate(-1.5deg); } .card:nth-child(even) { transform:rotate(1.5deg); }
+  .card:hover { transform:rotate(0) scale(1.04); }
+  .card:focus-visible { outline:4px dashed var(--accent2); outline-offset:4px; }
+  .nr { position:absolute; top:-16px; left:-12px; background:var(--accent2); color:#1d1630; border:3px solid var(--ink); border-radius:50%; width:44px; height:44px; display:grid; place-items:center; font-weight:bold; }
+  .setup { font-size:1.15rem; line-height:1.4; margin:8px 0 12px; }
+  .punch { font-size:1.25rem; font-weight:bold; color:var(--accent); display:none; }
+  .hint { font-size:.9rem; opacity:.7; }
+  .card.open .punch { display:block; animation:pop .4s cubic-bezier(.3,1.8,.5,1); }
+  .card.open .hint { display:none; }
+  .tss { position:fixed; left:50%; top:40%; transform:translate(-50%,-50%); font-size:clamp(2rem,10vw,5rem); font-weight:bold; color:var(--accent); text-shadow:4px 4px 0 var(--shadow); pointer-events:none; animation:tss 1s forwards; z-index:10; white-space:nowrap; }
+  .emoji { position:fixed; font-size:2rem; pointer-events:none; animation:fly 1.4s ease-out forwards; z-index:9; }
+  footer { text-align:center; padding:0 16px 32px; opacity:.7; }
+  @keyframes wobble { 0%,100% { transform:rotate(-3deg); } 50% { transform:rotate(3deg) scale(1.05); } }
+  @keyframes pop { from { transform:scale(0); } to { transform:scale(1); } }
+  @keyframes tss { 0% { opacity:0; transform:translate(-50%,-50%) scale(.3); } 30% { opacity:1; transform:translate(-50%,-50%) scale(1.15) rotate(-6deg); } 100% { opacity:0; transform:translate(-50%,-80%) scale(1); } }
+  @keyframes fly { to { transform:translate(var(--dx),var(--dy)) rotate(var(--r)); opacity:0; } }
+  @media (prefers-reduced-motion: reduce) { *,*::before,*::after { animation:none !important; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>🤡 Witze-Dummy 🤡</h1>
+  <p>Klick auf einen Witz, um die Pointe zu sehen. Lachen auf eigene Gefahr.</p>
+</header>
+<main id="witze"></main>
+<footer>Ba-dum-tss. Lachen ist freiwillig.</footer>
+<script>
+  const EMOJIS = ["😂","🤣","😹","🎉","🥁","🙈","💥"];
+  const RIMSHOTS = ["Ba-dum-tss! 🥁","HAHAHA 🤣","Ich kann nicht mehr 😹","Brüller! 💥"];
+
+  // Split at the first "?" or ": " so the punchline can be revealed separately.
+  function split(text) {
+    const m = text.match(/^(.*?[?:])\s+(.+)$/s) || text.match(/^(.*\.)\s+(.+)$/s);
+    return m ? [m[1], m[2]] : [text, "😐"];
+  }
+
+  function celebrate(x, y) {
+    const t = document.createElement("div");
+    t.className = "tss";
+    t.textContent = RIMSHOTS[Math.floor(Math.random() * RIMSHOTS.length)];
+    document.body.append(t);
+    setTimeout(() => t.remove(), 1000);
+    for (let i = 0; i < 14; i++) {
+      const e = document.createElement("span");
+      e.className = "emoji";
+      e.textContent = EMOJIS[i % EMOJIS.length];
+      e.style.left = x + "px"; e.style.top = y + "px";
+      e.style.setProperty("--dx", (Math.random() - .5) * 400 + "px");
+      e.style.setProperty("--dy", (Math.random() - .8) * 400 + "px");
+      e.style.setProperty("--r", (Math.random() - .5) * 720 + "deg");
+      document.body.append(e);
+      setTimeout(() => e.remove(), 1400);
+    }
+  }
+
+  async function load() {
+    const main = document.getElementById("witze");
+    for (let i = 1; i <= 10; i++) {
+      const nr = String(i).padStart(2, "0");
+      const res = await fetch(`witz-${nr}.txt`);
+      if (!res.ok) continue;
+      const [setup, punch] = split((await res.text()).trim());
+      const card = document.createElement("article");
+      card.className = "card";
+      card.tabIndex = 0;
+      card.innerHTML = `<div class="nr">${i}</div><p class="setup"></p><p class="punch"></p><p class="hint">👆 Pointe aufdecken</p>`;
+      card.querySelector(".setup").textContent = setup;
+      card.querySelector(".punch").textContent = punch;
+      const toggle = (ev) => {
+        const opening = !card.classList.contains("open");
+        card.classList.toggle("open");
+        if (opening) {
+          const r = card.getBoundingClientRect();
+          celebrate(ev.clientX || r.left + r.width / 2, ev.clientY || r.top + r.height / 2);
+        }
+      };
+      card.addEventListener("click", toggle);
+      card.addEventListener("keydown", (ev) => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); toggle(ev); } });
+      main.append(card);
+    }
+  }
+  load();
+</script>
+</body>
+</html>
